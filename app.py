@@ -3,6 +3,7 @@ import os
 import tempfile
 from document_loader import load_document
 from rag_pipeline import process_documents, get_answer, summarize_document, suggest_questions
+
 st.set_page_config(
     page_title="Document Intelligence System",
     page_icon="🧠",
@@ -72,7 +73,11 @@ with st.sidebar:
     st.divider()
 
     st.subheader("🔑 API Settings")
-    api_key = st.secrets.get("GROQ_API_KEY", "") or st.text_input("Groq API Key", type="password", placeholder="gsk_...")
+    try:
+        api_key = st.secrets.get("GROQ_API_KEY", "") or st.text_input("Groq API Key", type="password", placeholder="gsk_...")
+    except:
+        api_key = st.text_input("Groq API Key", type="password", placeholder="gsk_...")
+
     st.divider()
     st.subheader("📂 Upload Documents")
     uploaded_files = st.file_uploader(
@@ -138,7 +143,7 @@ if st.session_state.vectorstore is None:
     with col3:
         st.info("**Step 3**\n\nAsk questions or summarize your documents!")
 else:
-    tab1, tab2 = st.tabs(["💬 Chat", "📋 Summarize"])
+    tab1, tab2 = st.tabs(["💬 Chat", "📋 Summarize & Suggest"])
 
     with tab1:
         st.markdown(
@@ -181,13 +186,11 @@ else:
 
         st.subheader("💡 Smart Question Suggestions")
         st.markdown("Get AI-suggested questions based on your document.")
-
         selected_doc_q = st.selectbox(
             "Choose a document for question suggestions",
             st.session_state.doc_names,
             key="qsuggest"
         )
-
         if st.button("💡 Suggest Questions", use_container_width=True):
             if not api_key:
                 st.warning("Please enter your Groq API key in the sidebar!")
@@ -214,4 +217,28 @@ else:
                                         "answer": answer,
                                         "sources": sources
                                     })
-                                    st.rerun()    
+                                    st.rerun()
+
+# Chat input
+question = st.chat_input("Ask a question about your documents...")
+
+if question:
+    if st.session_state.vectorstore is None:
+        st.warning("Please upload and process documents first!")
+    elif not api_key:
+        st.warning("Please enter your Groq API key in the sidebar!")
+    else:
+        with st.spinner("🧠 Thinking..."):
+            answer, sources = get_answer(
+                st.session_state.vectorstore,
+                question,
+                api_key,
+                st.session_state.chat_history,
+                st.session_state.retriever
+            )
+            st.session_state.chat_history.append({
+                "question": question,
+                "answer": answer,
+                "sources": sources
+            })
+            st.rerun()
