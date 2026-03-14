@@ -1,0 +1,15 @@
+langchain
+langchain-community
+langchain-groq
+langchain-huggingface
+langchain-text-splitters
+langchain-core
+faiss-cpu
+pymupdf
+python-docx
+python-pptx
+streamlit
+rank-bm25
+sentence-transformers
+numpy
+groq
