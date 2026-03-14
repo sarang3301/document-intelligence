@@ -73,8 +73,7 @@ with st.sidebar:
     st.divider()
 
     st.subheader("🔑 API Settings")
-    api_key = st.text_input("Groq API Key", type="password", placeholder="gsk_...")
-
+    api_key = st.secrets.get("GROQ_API_KEY", "") or st.text_input("Groq API Key", type="password", placeholder="gsk_...")
     st.divider()
     st.subheader("📂 Upload Documents")
     uploaded_files = st.file_uploader(
