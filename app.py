@@ -2,8 +2,7 @@ import streamlit as st
 import os
 import tempfile
 from document_loader import load_document
-from rag_pipeline import process_documents, get_answer, summarize_document
-
+from rag_pipeline import process_documents, get_answer, summarize_document, suggest_questions
 st.set_page_config(
     page_title="Document Intelligence System",
     page_icon="🧠",
@@ -178,25 +177,41 @@ else:
                         unsafe_allow_html=True
                     )
 
-question = st.chat_input("Ask a question about your documents...")
+        st.divider()
 
-if question:
-    if st.session_state.vectorstore is None:
-        st.warning("Please upload and process documents first!")
-    elif not api_key:
-        st.warning("Please enter your Groq API key in the sidebar!")
-    else:
-        with st.spinner("🧠 Thinking..."):
-            answer, sources = get_answer(
-                st.session_state.vectorstore,
-                question,
-                api_key,
-                st.session_state.chat_history,
-                st.session_state.retriever
-            )
-            st.session_state.chat_history.append({
-                "question": question,
-                "answer": answer,
-                "sources": sources
-            })
-            st.rerun()
+        st.subheader("💡 Smart Question Suggestions")
+        st.markdown("Get AI-suggested questions based on your document.")
+
+        selected_doc_q = st.selectbox(
+            "Choose a document for question suggestions",
+            st.session_state.doc_names,
+            key="qsuggest"
+        )
+
+        if st.button("💡 Suggest Questions", use_container_width=True):
+            if not api_key:
+                st.warning("Please enter your Groq API key in the sidebar!")
+            else:
+                with st.spinner("Generating smart questions..."):
+                    text = st.session_state.doc_texts[selected_doc_q]
+                    questions = suggest_questions(text, selected_doc_q, api_key)
+                    st.markdown("**Click any question to ask it directly:**")
+                    for q in questions:
+                        if st.button(f"❓ {q}", use_container_width=True, key=q):
+                            if st.session_state.vectorstore is None:
+                                st.warning("Please process documents first!")
+                            else:
+                                with st.spinner("🧠 Thinking..."):
+                                    answer, sources = get_answer(
+                                        st.session_state.vectorstore,
+                                        q,
+                                        api_key,
+                                        st.session_state.chat_history,
+                                        st.session_state.retriever
+                                    )
+                                    st.session_state.chat_history.append({
+                                        "question": q,
+                                        "answer": answer,
+                                        "sources": sources
+                                    })
+                                    st.rerun()    

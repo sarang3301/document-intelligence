@@ -126,3 +126,36 @@ Summary:""")
     chain = prompt | llm | StrOutputParser()
     summary = chain.invoke({"content": preview, "filename": filename})
     return summary
+
+def suggest_questions(text, filename, api_key):
+    llm = ChatGroq(
+        api_key=api_key,
+        model_name="llama-3.3-70b-versatile",
+        temperature=0.7
+    )
+    preview = text[:2000]
+    prompt = PromptTemplate.from_template("""
+Read the following document content and suggest 5 smart, specific questions 
+that a user might want to ask about this document.
+Return ONLY the 5 questions as a numbered list, nothing else.
+
+Document name: {filename}
+
+Content:
+{content}
+
+5 Questions:""")
+    chain = prompt | llm | StrOutputParser()
+    result = chain.invoke({"content": preview, "filename": filename})
+    
+    # Parse the numbered list into a clean list
+    lines = result.strip().split("\n")
+    questions = []
+    for line in lines:
+        line = line.strip()
+        if line and len(line) > 5:
+            # Remove numbering like "1." or "1)"
+            if line[0].isdigit():
+                line = line[2:].strip() if line[1] in ".)" else line
+            questions.append(line)
+    return questions[:5]
